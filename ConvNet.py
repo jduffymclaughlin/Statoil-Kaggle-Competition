@@ -86,19 +86,3 @@ class ConvNet:
         submission.to_csv('sub_' + str(self.model_num) + '.csv', index=False)
         return submission
 
-
-def main():
-
-    dat1 = ImageData()
-
-    cn1 = ConvNet(model_num=16, conv_layers=(32, 64, 128, 256), dense_layers=(256, 128), 
-                 epochs=120, learning_rate=0.0001, patience=175) 
-    cn1.model.summary()
-    cn1.fit(dat1)
-    sub16 = cn1.evaluate(dat1)
-
-
-    print(sub16)
-
-if __name__ == '__main__':
-    main()

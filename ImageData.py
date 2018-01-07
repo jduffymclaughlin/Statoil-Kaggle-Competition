@@ -93,10 +93,3 @@ class ImageData:
         
         return more_images
 
-
-def main():
-
-    ig = ImageData(.75, True)
-
-if __name__ == '__main__':
-    main()
