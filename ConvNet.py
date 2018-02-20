@@ -9,10 +9,12 @@ from keras.callbacks import ModelCheckpoint, Callback, EarlyStopping
 from ImageData import ImageData
 
 
+
 class ConvNet:
     def __init__(self, cross_validating: bool, model_num: int, conv_layers: tuple, dense_layers: tuple, epochs: int,
                  learning_rate: float, dropout: float, patience: int=1000, batch_size: int=32) -> None:
         
+        # key model/training characteristics
         self.cross_validating = cross_validating
         self.conv_layers = conv_layers
         self.dense_layers = dense_layers
@@ -28,6 +30,12 @@ class ConvNet:
         self.model = self.get_model()
     
     def get_model(self) -> Sequential:
+        # generates model based on attributes at creation of ConvNet object
+        # first creates convolutional layers based on tuple self.conv_layers
+        # next specifies dense layers based on tuple self.dense_layers
+        # incidence angle concatenated to dense layers
+        # compiled model returned
+
         pic_input = Input(shape=(75, 75, 3))
         ang_input = Input(shape=(1,))
         cnn = BatchNormalization()(pic_input)
@@ -48,9 +56,12 @@ class ConvNet:
         model = Model(inputs=[pic_input, ang_input], outputs=cnn)
         opt = Adam(lr=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
         model.compile(optimizer=opt, loss = 'binary_crossentropy', metrics = ['accuracy'])
+        print(model.summary())
         return model
 
     def get_callbacks(self) -> list:
+        # returns training callbacks
+
         if self.cross_validating:
             es = EarlyStopping('val_loss', patience=self.patience, mode="min")
             msave = ModelCheckpoint(self.weights_path, monitor='val_loss', save_best_only=True)
@@ -60,6 +71,10 @@ class ConvNet:
         return [es, msave]
 
     def fit(self, data: ImageData) -> None:
+        # fit is called to begin training 
+        # receives ImageData object which has as attributes the necesary test/training data
+        # all data transformations are applied at creation of ImageData object
+
         generator = data.gen_flow_(data.X_train, data.X_angle_train, data.y_train, self.batch_size)
         batch_size = 32
 
@@ -69,12 +84,17 @@ class ConvNet:
         self.save_model()
 
     def save_model(self) -> None:
+        # save final model to json and weights to h5
+
         model_json = self.model.to_json()
         with open("./model_" + str(self.model_num) + ".json", "w") as json_file:
             json_file.write(model_json)
         self.model.save_weights("model_" + str(self.model_num) + ".h5")
 
     def evaluate(self, data: ImageData) -> pd.DataFrame:
+        # evaluate validation loss and accuracy after training
+        # create final submission in kaggle-specified format
+
         self.model.load_weights(filepath=self.weights_path)
         score = self.model.evaluate([data.X_valid, data.X_angle_valid], data.y_valid, verbose=1)
         print('Test loss:', score[0])
@@ -85,4 +105,5 @@ class ConvNet:
         submission['is_iceberg'] = predicted_test.reshape((predicted_test.shape[0]))
         submission.to_csv('sub_' + str(self.model_num) + '.csv', index=False)
         return submission
+
 
